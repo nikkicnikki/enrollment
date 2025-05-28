@@ -11,13 +11,17 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
     const [activeTab, setActiveTab] = useState('Regular');
     const [search, setSearch] = useState('');
     const [isImporting, setIsImporting] = useState(false);
+    const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
 
-    const { props } = usePage();
-    const flash = props.flash;
+    const { flash } = usePage().props as any;
 
+    // Show success/error toast
     useEffect(() => {
         if (flash?.success) toast.success(flash.success);
         if (flash?.error) toast.error(flash.error);
+        if (flash?.duplicates && flash.duplicates.length > 0) {
+            setShowDuplicatesModal(true);
+        }
     }, [flash]);
 
     const getPassers = () => {
@@ -69,6 +73,8 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
         });
     };
 
+    console.log('Flash from Inertia:', flash);
+
     return (
         <>
             <Head title="Admission Passers" />
@@ -80,11 +86,10 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
                     {tabs.map(tab => (
                         <button
                             key={tab}
-                            className={`px-4 py-2 rounded cursor-pointer transition ${
-                                activeTab === tab
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-200 hover:bg-gray-300'
-                            }`}
+                            className={`px-4 py-2 rounded cursor-pointer transition ${activeTab === tab
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-200 hover:bg-gray-300'
+                                }`}
                             onClick={() => setActiveTab(tab)}
                         >
                             {tab}
@@ -118,11 +123,10 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
                         <button
                             onClick={handleImport}
                             disabled={isImporting}
-                            className={`px-4 py-2 rounded text-white ${
-                                isImporting
-                                    ? 'bg-gray-400 cursor-not-allowed'
-                                    : 'bg-blue-700 hover:opacity-90'
-                            }`}
+                            className={`px-4 py-2 rounded text-white cursor-pointer ${isImporting
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-blue-700 hover:opacity-90'
+                                }`}
                         >
                             {isImporting ? 'Importing...' : 'Import from API'}
                         </button>
@@ -158,6 +162,61 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
                         ))}
                     </tbody>
                 </table>
+
+                {/* Duplicate Modal */}
+                {showDuplicatesModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded shadow-lg max-w-6xl w-full max-h-[80vh] overflow-y-auto p-6">
+                            <h2 className="text-xl font-semibold mb-4">Duplicate Records Found</h2>
+                            <table className="table-auto w-full border border-gray-300">
+                                <thead>
+                                    <tr className="bg-gray-100">
+                                        <th className="border px-2 py-1">Category</th>
+                                        <th className="border px-2 py-1">LRN</th>
+                                        <th className="border px-2 py-1">First Name</th>
+                                        <th className="border px-2 py-1">Middle Name</th>
+                                        <th className="border px-2 py-1">Last Name</th>
+                                        <th className="border px-2 py-1">Senior High School</th>
+                                        <th className="border px-2 py-1">Tag</th>
+                                    </tr>
+                                </thead>
+                                <tbody className='text-[14px]'>
+                                    {flash.duplicates.map((dupPair: any, idx: number) => (
+                                        <React.Fragment key={idx}>
+                                            {/* Original */}
+                                            <tr className="border-b bg-gray-100">
+                                                <td className="border px-2 py-1">{dupPair.existing.category}</td>
+                                                <td className="border px-2 py-1">{dupPair.existing.lrn}</td>
+                                                <td className="border px-2 py-1">{dupPair.existing.first_name}</td>
+                                                <td className="border px-2 py-1">{dupPair.existing.middle_name}</td>
+                                                <td className="border px-2 py-1">{dupPair.existing.last_name}</td>
+                                                <td className="border px-2 py-1">{dupPair.existing.senior_high_school}</td>
+                                                <td className="border px-2 py-1">Original</td>
+                                            </tr>
+                                            {/* Incoming duplicate */}
+                                            <tr className="border-b">
+                                                <td className="border px-2 py-1">{dupPair.incoming.category}</td>
+                                                <td className="border px-2 py-1">{dupPair.incoming.lrn}</td>
+                                                <td className="border px-2 py-1">{dupPair.incoming.first_name}</td>
+                                                <td className="border px-2 py-1">{dupPair.incoming.middle_name}</td>
+                                                <td className="border px-2 py-1">{dupPair.incoming.last_name}</td>
+                                                <td className="border px-2 py-1">{dupPair.existing.senior_high_school}</td>
+                                                <td className="border px-2 py-1">Duplicate</td>
+                                            </tr>
+                                        </React.Fragment>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <button
+                                onClick={() => setShowDuplicatesModal(false)}
+                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                )}
+
             </div>
         </>
     );

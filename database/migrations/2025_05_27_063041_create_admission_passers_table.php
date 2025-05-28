@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('junior_high_school')->nullable();
             $table->string('senior_high_school')->nullable();
             $table->string('senior_high_school_year_graduated')->nullable();
-            $table->string('lrn')->nullable()->unique();
+            $table->string('lrn')->nullable();
             $table->string('strand')->nullable();
             $table->string('g11_gwa1')->nullable();
             $table->string('g11_gwa2')->nullable();
@@ -48,9 +48,11 @@ return new class extends Migration
             $table->string('admission_grade')->nullable();
             $table->string('category')->nullable(); // To tag as 'regular', 'athletes', or 'als'
             $table->timestamps();
+
+            // Composite unique index on lrn + category
+            // $table->unique(['lrn', 'category'], 'lrn_category_unique');
         });
     }
-
 
     /**
      * Reverse the migrations.
