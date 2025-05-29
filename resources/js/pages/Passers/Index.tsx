@@ -5,13 +5,16 @@ import { pdf } from '@react-pdf/renderer';
 import PassersPDF from '@/components/PassersPDF';
 import toast from 'react-hot-toast';
 
-const tabs = ['Regular', 'Athletes', 'ALS'];
+const tabs = ['Regular', 'Athletes', 'ALS', 'ALL'];
 
 const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
     const [activeTab, setActiveTab] = useState('Regular');
-    const [search, setSearch] = useState('');
+    const [searchName, setSearchName] = useState('');
+    const [searchLrn, setSearchLrn] = useState('');
     const [isImporting, setIsImporting] = useState(false);
     const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
+
+    const [expandedRows, setExpandedRows] = useState<number[]>([]);
 
     const { flash } = usePage().props as any;
 
@@ -25,22 +28,92 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
     }, [flash]);
 
     const getPassers = () => {
+        let passers;
+
         switch (activeTab) {
-            case 'Regular': return regularPassers;
-            case 'Athletes': return athletesPassers;
-            case 'ALS': return alsPassers;
-            default: return [];
+            case 'Regular': passers = regularPassers; break;
+            case 'Athletes': passers = athletesPassers; break;
+            case 'ALS': passers = alsPassers; break;
+            case 'ALL': passers = [
+                ...regularPassers,
+                ...athletesPassers,
+                ...alsPassers
+            ].sort((a, b) => {
+                const nameA = `${a?.last_name || ''}, ${a?.first_name || ''} ${a?.middle_name || ''}`.toLowerCase();
+                const nameB = `${b?.last_name || ''}, ${b?.first_name || ''} ${b?.middle_name || ''}`.toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+                break;
+            default: passers = [];
         }
+
+        return passers;
     };
 
     const currentPassers = getPassers();
 
-    const filteredPassers = currentPassers.filter(passer =>
-        `${passer.last_name}, ${passer.first_name} ${passer.middle_name}`.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredPassers = currentPassers.filter(passer => {
+        const fullName = `${passer.last_name}, ${passer.first_name} ${passer.middle_name}`.toLowerCase();
+        const lrn = (passer.lrn || '').toLowerCase();
+
+        const nameMatch = !searchName || fullName.includes(searchName.toLowerCase());
+        const lrnMatch = !searchLrn || lrn.includes(searchLrn.toLowerCase());
+
+        return nameMatch && lrnMatch;
+    });
+
 
     const exportCSV = () => {
-        const csv = Papa.unparse(filteredPassers);
+
+        const fields = [
+            { label: 'First Name', value: 'first_name' },
+            { label: 'Middle Name', value: 'middle_name' },
+            { label: 'Last Name', value: 'last_name' },
+
+            { label: 'Gender', value: 'sex' },
+            { label: 'Age', value: 'age' },
+            { label: 'Birthday', value: 'dob' },
+
+            { label: 'Address', value: 'address' },
+            { label: 'Barangay', value: 'barangay' },
+            { label: 'Zip Code', value: 'zip_code' },
+            { label: 'Contact No.', value: 'contact_no' },
+
+            { label: 'JHS', value: 'junior_high_school' },
+            { label: 'SHS', value: 'senior_high_school' },
+            { label: 'Graduated', value: 'senior_high_school_year_graduated' },
+            { label: 'LRN', value: 'lrn' },
+            { label: 'Strand', value: 'strand' },
+            { label: 'G11 GWA1', value: 'g11_gwa1' },
+            { label: 'G11 GWA2', value: 'g11_gwa2' },
+            { label: 'G12 GWA1', value: 'g12_gwa1' },
+            { label: 'G12 GWA2', value: 'g12_gwa2' },
+
+            { label: '1ST Choose', value: 'first_course' },
+            { label: '2ND Choose', value: 'second_course' },
+            { label: '3RD Choose', value: 'third_course' },
+
+            { label: 'Parents Name', value: 'name_of_parent' },
+            { label: 'Comelec No.', value: 'parent_comelec_no' },
+            { label: 'Contact No.', value: 'parent_contact_no' },
+            { label: 'Student Comelec No.', value: 'student_comelec_no' },
+
+            { label: 'Exam Date', value: 'exam_date' },
+            { label: 'Exam Time', value: 'exam_time' },
+            { label: 'Exam Room', value: 'exam_room_no' },
+            { label: 'Exam Seat', value: 'exam_seat_no' },
+            
+            
+            { label: 'Type', value: 'applicantType' },
+            { label: 'Athlete', value: 'athlete' },
+
+        ];
+
+        const csv = Papa.unparse({
+            fields: fields.map(f => f.label),
+            data: filteredPassers.map(p => fields.map(f => p[f.value]))
+        });
+
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -73,7 +146,7 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
         });
     };
 
-    console.log('Flash from Inertia:', flash);
+
 
     return (
         <>
@@ -103,8 +176,16 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
                         type="text"
                         className="border rounded px-3 py-2 w-full sm:w-1/3"
                         placeholder="Search by name..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        value={searchName}
+                        onChange={(e) => setSearchName(e.target.value)}
+                    />
+
+                    <input
+                        type="text"
+                        className="border rounded px-3 py-2 w-full sm:w-1/3"
+                        placeholder="Search by LRN..."
+                        value={searchLrn}
+                        onChange={(e) => setSearchLrn(e.target.value)}
                     />
 
                     <div className="flex items-center gap-2">
@@ -138,28 +219,124 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
                 </p>
 
                 {/* Table */}
-                <table className="w-full text-left border">
+                <table className="w-full text-left border font-bold">
                     <thead className="bg-gray-100">
                         <tr>
                             <th className="p-2 border">Name</th>
-                            <th className="p-2 border">Strand</th>
+                            <th className="p-2 border">Personal Info</th>
+                            <th className="p-2 border">Address/Cont.</th>
+                            <th className="p-2 border">LRN</th>
+                            <th className="p-2 border">Education Info</th>
+                            <th className="p-2 border">Course Choose</th>
+                            <th className="p-2 border">Parent Info</th>
                             <th className="p-2 border">Exam Sched</th>
-                            <th className="p-2 border">Seat</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredPassers.map((passer, i) => (
-                            <tr key={i} className="hover:bg-gray-50">
-                                <td className="p-2 border">
-                                    {passer.last_name}, {passer.first_name} {passer.middle_name}
-                                </td>
-                                <td className="p-2 border">{passer.strand}</td>
-                                <td className="p-2 border">
-                                    {passer.exam_date} | {passer.exam_time} | Rm.{passer.exam_room_no}
-                                </td>
-                                <td className="p-2 border">{passer.exam_seat_no}</td>
-                            </tr>
-                        ))}
+                        {filteredPassers.map((passer, i) => {
+                            const isExpanded = expandedRows.includes(i);
+
+                            return (
+                                <tr
+                                    key={i}
+                                    className={`text-[11px] cursor-pointer hover:bg-gray-100 ${Math.floor(i / 2) % 2 === 0 ? 'bg-yellow-50' : ''
+                                        }`}
+                                    onClick={() => {
+                                        if (isExpanded) {
+                                            setExpandedRows(expandedRows.filter(row => row !== i));
+                                        } else {
+                                            setExpandedRows([...expandedRows, i]);
+                                        }
+                                    }}
+                                >
+                                    {/* Name */}
+                                    <td className="p-2 border  w-[200px]">
+                                        {passer.last_name}, {passer.first_name} {passer.middle_name}
+                                    </td>
+
+                                    {/* Personal Info */}
+                                    <td className="p-2 border w-[200px]">
+                                        {isExpanded && (
+                                            <ul className="list-disc pl-4">
+                                                <li><b>Email:</b> <span className='text-gray-500 font-semibold'>{passer.email}</span></li>
+                                                <li><b>Gender:</b> <span className='text-gray-500 font-semibold'>{passer.sex}</span></li>
+                                                <li><b>Birth:</b> <span className='text-gray-500 font-semibold'>{passer.dob}</span></li>
+                                                <li><b>Age:</b> <span className='text-gray-500 font-semibold'>{passer.age}</span></li>
+                                                <li><b>Nationality:</b> <span className='text-gray-500 font-semibold'>{passer.nationality}</span></li>
+                                                <li><b>Comelec No:</b> <span className='text-gray-500 font-semibold'>{passer.student_comelec_no}</span></li>
+                                            </ul>
+                                        )}
+                                    </td>
+
+                                    {/* Address */}
+                                    <td className="p-2 border w-[250px]">
+                                        {isExpanded && (
+                                            <ul className="list-disc pl-4">
+                                                <li><b>Address:</b> <span className='text-gray-500 font-semibold'>{passer.address}</span></li>
+                                                <li><b>Barangay:</b> <span className='text-gray-500 font-semibold'>{passer.barangay}</span></li>
+                                                <li><b>Zip Code:</b> <span className='text-gray-500 font-semibold'>{passer.zip_code}</span></li>
+                                                <li><b>Cont. No:</b> <span className='text-gray-500 font-semibold'>{passer.contact_no}</span></li>
+                                            </ul>
+                                        )}
+                                    </td>
+
+                                    {/* LRN (always shown) */}
+                                    <td className="p-2 border w-[100px]">{passer.lrn}</td>
+
+                                    {/* Education Info */}
+                                    <td className="p-2 border w-[250px]">
+                                        {isExpanded && (
+                                            <ul className="list-disc pl-4">
+                                                <li><b>JHS:</b> <span className='text-gray-500 font-semibold'>{passer.junior_high_school}</span></li>
+                                                <li><b>SHS:</b> <span className='text-gray-500 font-semibold'>{passer.senior_high_school}</span></li>
+                                                <li><b>Strand:</b> <span className='text-gray-500 font-semibold'>{passer.strand}</span></li>
+                                                <li><b>GWA1 G11:</b> <span className='text-gray-500 font-semibold'>{passer.g11_gwa1}</span></li>
+                                                <li><b>GWA2 G11:</b> <span className='text-gray-500 font-semibold'>{passer.g11_gwa2}</span></li>
+                                                <li><b>GWA1 G12:</b> <span className='text-gray-500 font-semibold'>{passer.g12_gwa1}</span></li>
+                                                <li><b>GWA2 G12:</b> <span className='text-gray-500 font-semibold'>{passer.g12_gwa2}</span></li>
+                                                <li><b>SHS Graduated:</b> <span className='text-gray-500 font-semibold'>{passer.senior_high_school_year_graduated}</span></li>
+                                            </ul>
+                                        )}
+                                    </td>
+
+                                    {/* Course Choices */}
+                                    <td className="p-2 border w-[200px]">
+                                        {isExpanded && (
+                                            <ul className="list-disc pl-4">
+                                                <li><b>1st:</b> <span className='text-gray-500 font-semibold'>{passer.first_course}</span></li>
+                                                <li><b>2nd:</b> <span className='text-gray-500 font-semibold'>{passer.second_course}</span></li>
+                                                <li><b>3rd:</b> <span className='text-gray-500 font-semibold'>{passer.third_course}</span></li>
+                                            </ul>
+                                        )}
+                                    </td>
+
+                                    {/* Parent Info */}
+                                    <td className="p-2 border w-[150px]">
+                                        {isExpanded && (
+                                            <ul className="list-disc pl-4">
+                                                <li><b>Parent:</b> <span className='text-gray-500 font-semibold'>{passer.name_of_parent}</span></li>
+                                                <li><b>Cont. no.:</b> <span className='text-gray-500 font-semibold'>{passer.parent_contact_no}</span></li>
+                                                <li><b>Comelec No.:</b> <span className='text-gray-500 font-semibold'>{passer.parent_comelec_no}</span></li>
+                                            </ul>
+                                        )}
+                                    </td>
+
+                                    {/* Exam Schedule */}
+                                    <td className="p-2 border w-[180px]">
+                                        {isExpanded && (
+                                            <ul className="list-disc pl-4">
+                                                <li><b>Date:</b> <span className='text-gray-500 font-semibold'>{passer.exam_date}</span></li>
+                                                <li><b>Shift:</b> <span className='text-gray-500 font-semibold'>{passer.exam_time}</span></li>
+                                                <li><b>Rm.:</b> <span className='text-gray-500 font-semibold'>{passer.exam_room_no}</span></li>
+                                                <li><b>Seat No.:</b> <span className='text-gray-500 font-semibold'>{passer.exam_seat_no}</span></li>
+                                            </ul>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+
+
                     </tbody>
                 </table>
 
@@ -184,7 +361,7 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
                                     {flash.duplicates.map((dupPair: any, idx: number) => (
                                         <React.Fragment key={idx}>
                                             {/* Original */}
-                                            <tr className="border-b bg-gray-100">
+                                            <tr className="border-b ">
                                                 <td className="border px-2 py-1">{dupPair.existing.category}</td>
                                                 <td className="border px-2 py-1">{dupPair.existing.lrn}</td>
                                                 <td className="border px-2 py-1">{dupPair.existing.first_name}</td>
@@ -194,7 +371,7 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
                                                 <td className="border px-2 py-1">Original</td>
                                             </tr>
                                             {/* Incoming duplicate */}
-                                            <tr className="border-b">
+                                            <tr className="border-b bg-yellow-300">
                                                 <td className="border px-2 py-1">{dupPair.incoming.category}</td>
                                                 <td className="border px-2 py-1">{dupPair.incoming.lrn}</td>
                                                 <td className="border px-2 py-1">{dupPair.incoming.first_name}</td>

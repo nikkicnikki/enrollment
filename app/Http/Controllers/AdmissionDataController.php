@@ -75,7 +75,7 @@ class AdmissionDataController extends Controller
         $lrnCounts = [];
         $fallbackCounts = [];
 
-        $duplicatesArray = []; // <-- Add this to track duplicates info
+        $duplicatesArray = []; 
 
         foreach ($passers as $passer) {
             $rawLrn = isset($passer['lrn']) ? preg_replace('/\s+/', '', trim($passer['lrn'])) : null;
