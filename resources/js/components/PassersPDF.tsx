@@ -44,9 +44,7 @@ const PassersPDF = ({ passers, tab }: { passers: any[]; tab: string }) => (
 
       <View style={styles.tableHeader}>
         <Text style={styles.cell}>Name</Text>
-        <Text style={styles.cell}>Strand</Text>
-        <Text style={styles.cell}>Room</Text>
-        <Text style={styles.cell}>Seat</Text>
+        
       </View>
 
       {passers.map((passer, i) => (
@@ -54,9 +52,7 @@ const PassersPDF = ({ passers, tab }: { passers: any[]; tab: string }) => (
           <Text style={styles.cell}>
             {passer.last_name}, {passer.first_name} {passer.middle_name}
           </Text>
-          <Text style={styles.cell}>{passer.strand}</Text>
-          <Text style={styles.cell}>{passer.exam_room_no}</Text>
-          <Text style={styles.cell}>{passer.exam_seat_no}</Text>
+          
         </View>
       ))}
     </Page>
