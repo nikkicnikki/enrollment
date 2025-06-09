@@ -124,13 +124,17 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
     //     link.click();
     // };
 
-    
+
 
     const exportXLSX = () => {
         const fields = [
-            { label: 'Last Name', value: 'last_name' },
-            { label: 'First Name', value: 'first_name' },
-            { label: 'Middle Name', value: 'middle_name' },
+            // { label: 'Last Name', value: 'last_name' },
+            // { label: 'First Name', value: 'first_name' },
+            // { label: 'Middle Name', value: 'middle_name' },
+            {
+                label: 'Name',
+                value: (row) => `${row.last_name}, ${row.first_name} ${row.middle_name}`
+            },
             
             { label: 'Email', value: 'email' },
             { label: 'Gender', value: 'sex' },
@@ -166,7 +170,10 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
 
         // Prepare data rows with headers
         const data = filteredPassers.map(p =>
-            Object.fromEntries(fields.map(f => [f.label, p[f.value] ?? '']))
+            Object.fromEntries(fields.map(f => [
+                f.label,
+                typeof f.value === 'function' ? f.value(p) : (p[f.value] ?? '')
+            ]))
         );
 
         const worksheet = XLSX.utils.json_to_sheet(data);
