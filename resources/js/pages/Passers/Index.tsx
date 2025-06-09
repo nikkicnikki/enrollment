@@ -4,6 +4,7 @@ import Papa from 'papaparse';
 import { pdf } from '@react-pdf/renderer';
 import PassersPDF from '@/components/PassersPDF';
 import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx';
 
 const tabs = ['Regular', 'Athletes', 'ALS', 'ALL'];
 
@@ -63,22 +64,82 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
     });
 
 
-    const exportCSV = () => {
+    // const exportCSV = () => {
 
+    //     const fields = [
+    //         { label: 'First Name', value: 'first_name' },
+    //         { label: 'Middle Name', value: 'middle_name' },
+    //         { label: 'Last Name', value: 'last_name' },
+
+    //         { label: 'Email', value: 'email' },
+    //         { label: 'Gender', value: 'sex' },
+    //         { label: 'Age', value: 'age' },
+    //         { label: 'Birthday', value: 'dob' },
+
+    //         { label: 'Address', value: 'address' },
+    //         { label: 'Barangay', value: 'barangay' },
+    //         { label: 'Zip Code', value: 'zip_code' },
+    //         { label: 'Contact No.', value: 'contact_no' },
+
+    //         { label: 'JHS', value: 'junior_high_school' },
+    //         { label: 'SHS', value: 'senior_high_school' },
+    //         { label: 'Graduated', value: 'senior_high_school_year_graduated' },
+    //         { label: 'LRN', value: 'lrn' },
+    //         { label: 'Strand', value: 'strand' },
+    //         { label: 'G11 GWA1', value: 'g11_gwa1' },
+    //         { label: 'G11 GWA2', value: 'g11_gwa2' },
+    //         { label: 'G12 GWA1', value: 'g12_gwa1' },
+    //         { label: 'G12 GWA2', value: 'g12_gwa2' },
+
+    //         { label: '1ST Choose', value: 'first_course' },
+    //         { label: '2ND Choose', value: 'second_course' },
+    //         { label: '3RD Choose', value: 'third_course' },
+
+    //         { label: 'Parents Name', value: 'name_of_parent' },
+    //         { label: 'Comelec No.', value: 'parent_comelec_no' },
+    //         { label: 'Contact No.', value: 'parent_contact_no' },
+    //         { label: 'Student Comelec No.', value: 'student_comelec_no' },
+
+    //         { label: 'Exam Date', value: 'exam_date' },
+    //         { label: 'Exam Time', value: 'exam_time' },
+    //         { label: 'Exam Room', value: 'exam_room_no' },
+    //         { label: 'Exam Seat', value: 'exam_seat_no' },
+
+
+    //         { label: 'Type', value: 'applicantType' },
+    //         { label: 'Athlete', value: 'athlete' },
+
+    //     ];
+
+    //     const csv = Papa.unparse({
+    //         fields: fields.map(f => f.label),
+    //         data: filteredPassers.map(p => fields.map(f => p[f.value]))
+    //     });
+
+    //     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    //     const url = URL.createObjectURL(blob);
+    //     const link = document.createElement('a');
+    //     link.href = url;
+    //     link.download = `${activeTab.toLowerCase()}-passers.csv`;
+    //     link.click();
+    // };
+
+    
+
+    const exportXLSX = () => {
         const fields = [
+            { label: 'Last Name', value: 'last_name' },
             { label: 'First Name', value: 'first_name' },
             { label: 'Middle Name', value: 'middle_name' },
-            { label: 'Last Name', value: 'last_name' },
-
+            
+            { label: 'Email', value: 'email' },
             { label: 'Gender', value: 'sex' },
             { label: 'Age', value: 'age' },
             { label: 'Birthday', value: 'dob' },
-
             { label: 'Address', value: 'address' },
             { label: 'Barangay', value: 'barangay' },
             { label: 'Zip Code', value: 'zip_code' },
             { label: 'Contact No.', value: 'contact_no' },
-
             { label: 'JHS', value: 'junior_high_school' },
             { label: 'SHS', value: 'senior_high_school' },
             { label: 'Graduated', value: 'senior_high_school_year_graduated' },
@@ -88,39 +149,35 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
             { label: 'G11 GWA2', value: 'g11_gwa2' },
             { label: 'G12 GWA1', value: 'g12_gwa1' },
             { label: 'G12 GWA2', value: 'g12_gwa2' },
-
             { label: '1ST Choose', value: 'first_course' },
             { label: '2ND Choose', value: 'second_course' },
             { label: '3RD Choose', value: 'third_course' },
-
             { label: 'Parents Name', value: 'name_of_parent' },
             { label: 'Comelec No.', value: 'parent_comelec_no' },
             { label: 'Contact No.', value: 'parent_contact_no' },
             { label: 'Student Comelec No.', value: 'student_comelec_no' },
-
             { label: 'Exam Date', value: 'exam_date' },
             { label: 'Exam Time', value: 'exam_time' },
             { label: 'Exam Room', value: 'exam_room_no' },
             { label: 'Exam Seat', value: 'exam_seat_no' },
-            
-            
             { label: 'Type', value: 'applicantType' },
             { label: 'Athlete', value: 'athlete' },
-
         ];
 
-        const csv = Papa.unparse({
-            fields: fields.map(f => f.label),
-            data: filteredPassers.map(p => fields.map(f => p[f.value]))
-        });
+        // Prepare data rows with headers
+        const data = filteredPassers.map(p =>
+            Object.fromEntries(fields.map(f => [f.label, p[f.value] ?? '']))
+        );
 
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${activeTab.toLowerCase()}-passers.csv`;
-        link.click();
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Passers');
+
+        const fileName = `${activeTab.toLowerCase()}-passers.xlsx`;
+        XLSX.writeFile(workbook, fileName);
     };
+
+
 
     const downloadPDF = async () => {
         const blob = await pdf(
@@ -133,6 +190,9 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
         link.download = `${activeTab.toLowerCase()}-passers.pdf`;
         link.click();
     };
+
+
+
 
     const handleImport = () => {
         if (!confirm('Are you sure you want to import data from the API?')) return;
@@ -190,10 +250,10 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
 
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={exportCSV}
+                            onClick={exportXLSX}
                             className="bg-green-600 text-white px-4 py-2 rounded cursor-pointer hover:opacity-90"
                         >
-                            Export CSV
+                            Export Excel
                         </button>
                         <button
                             onClick={downloadPDF}
