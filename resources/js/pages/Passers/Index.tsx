@@ -128,13 +128,13 @@ const Index = ({ regularPassers, athletesPassers, alsPassers }: Props) => {
 
     const exportXLSX = () => {
         const fields = [
-            // { label: 'Last Name', value: 'last_name' },
-            // { label: 'First Name', value: 'first_name' },
-            // { label: 'Middle Name', value: 'middle_name' },
-            {
-                label: 'Name',
-                value: (row) => `${row.last_name}, ${row.first_name} ${row.middle_name}`
-            },
+            { label: 'Last Name', value: 'last_name' },
+            { label: 'First Name', value: 'first_name' },
+            { label: 'Middle Name', value: 'middle_name' },
+            // {
+            //     label: 'Name',
+            //     value: (row) => `${row.last_name}, ${row.first_name} ${row.middle_name}`
+            // },
             
             { label: 'Email', value: 'email' },
             { label: 'Gender', value: 'sex' },
